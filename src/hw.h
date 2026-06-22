@@ -1,0 +1,20 @@
+#pragma once
+#include "globals.h"
+#include "SensorPCF85063.hpp"
+
+struct HWDateTime {
+    int year, month, day, hour, minute, second, week;
+};
+
+void hw_init_i2c();
+void hw_init_rtc();
+void hw_init_touch();
+void hw_init_display();
+void hw_init_lvgl();
+
+void       set_brightness(uint8_t pct);
+void       set_backlight(bool on);
+void       hw_display_restart();
+uint8_t    read_ch32_input();
+HWDateTime hw_get_datetime();
+void       hw_set_datetime(int y, int m, int d, int h, int mi, int s);
