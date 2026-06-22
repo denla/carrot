@@ -39,17 +39,18 @@ static void calc_sec_hand(float angle_deg, lv_point_t *p0, lv_point_t *p1) {
 static void on_clock4_gesture(lv_event_t *) {
     if (lv_scr_act() != scr_clock4) return;
     lv_dir_t dir = lv_indev_get_gesture_dir(lv_indev_get_act());
-    if (dir == LV_DIR_LEFT)  nav_to(scr_clock4, scr_weather,  LV_SCR_LOAD_ANIM_MOVE_LEFT);
-    if (dir == LV_DIR_RIGHT) nav_to(scr_clock4, scr_settings, LV_SCR_LOAD_ANIM_MOVE_RIGHT);
-    if (dir == LV_DIR_TOP)   nav_to(scr_clock4, scr_nav,      LV_SCR_LOAD_ANIM_MOVE_TOP);
+    if (dir == LV_DIR_LEFT)  nav_to_weather (scr_clock4, LV_SCR_LOAD_ANIM_MOVE_LEFT);
+    if (dir == LV_DIR_RIGHT) nav_to_settings(scr_clock4, LV_SCR_LOAD_ANIM_MOVE_RIGHT);
+    if (dir == LV_DIR_TOP)   nav_to_nav     (scr_clock4, LV_SCR_LOAD_ANIM_MOVE_TOP);
 }
 
 static void on_clock4_tap(lv_event_t *) {
     if (lv_scr_act() != scr_clock4) return;
-    nav_to(scr_clock4, scr_nav, LV_SCR_LOAD_ANIM_MOVE_TOP);
+    nav_to_nav(scr_clock4, LV_SCR_LOAD_ANIM_MOVE_TOP);
 }
 
 void create_clock4_screen() {
+    if (scr_clock4) return;
     scr_clock4 = make_screen();
     lv_obj_add_event_cb(scr_clock4, on_clock4_gesture, LV_EVENT_GESTURE, NULL);
     lv_obj_add_event_cb(scr_clock4, on_clock4_tap,     LV_EVENT_CLICKED,  NULL);
@@ -111,6 +112,7 @@ static uint32_t  last_rtc_ms  = 0;
 static bool      dt_valid      = false;
 
 void update_clock4() {
+    if (!scr_clock4) return;
     uint32_t now = millis();
 
     // Read RTC once per second

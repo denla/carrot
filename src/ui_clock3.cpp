@@ -8,17 +8,18 @@ LV_FONT_DECLARE(sf_pro_display_medium_24);
 static void on_clock3_gesture(lv_event_t *) {
     if (lv_scr_act() != scr_clock3) return;
     lv_dir_t dir = lv_indev_get_gesture_dir(lv_indev_get_act());
-    if (dir == LV_DIR_LEFT)  nav_to(scr_clock3, scr_weather,  LV_SCR_LOAD_ANIM_MOVE_LEFT);
-    if (dir == LV_DIR_RIGHT) nav_to(scr_clock3, scr_settings, LV_SCR_LOAD_ANIM_MOVE_RIGHT);
-    if (dir == LV_DIR_TOP)   nav_to(scr_clock3, scr_nav,      LV_SCR_LOAD_ANIM_MOVE_TOP);
+    if (dir == LV_DIR_LEFT)  nav_to_weather (scr_clock3, LV_SCR_LOAD_ANIM_MOVE_LEFT);
+    if (dir == LV_DIR_RIGHT) nav_to_settings(scr_clock3, LV_SCR_LOAD_ANIM_MOVE_RIGHT);
+    if (dir == LV_DIR_TOP)   nav_to_nav     (scr_clock3, LV_SCR_LOAD_ANIM_MOVE_TOP);
 }
 
 static void on_clock3_tap(lv_event_t *) {
     if (lv_scr_act() != scr_clock3) return;
-    nav_to(scr_clock3, scr_nav, LV_SCR_LOAD_ANIM_MOVE_TOP);
+    nav_to_nav(scr_clock3, LV_SCR_LOAD_ANIM_MOVE_TOP);
 }
 
 void create_clock3_screen() {
+    if (scr_clock3) return;
     scr_clock3 = make_screen();
     lv_obj_add_event_cb(scr_clock3, on_clock3_gesture, LV_EVENT_GESTURE, NULL);
     lv_obj_add_event_cb(scr_clock3, on_clock3_tap,     LV_EVENT_CLICKED,  NULL);
@@ -52,6 +53,7 @@ void create_clock3_screen() {
 }
 
 void update_clock3() {
+    if (!scr_clock3) return;
     HWDateTime dt = hw_get_datetime();
 
     char hour_str[4];

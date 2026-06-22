@@ -1,4 +1,9 @@
 #include "ui_common.h"
+#include "ui_nav.h"
+#include "ui_weather.h"
+#include "ui_settings.h"
+#include "ui_calendar.h"
+#include "ui_music.h"
 
 LV_FONT_DECLARE(sf_pro_display_medium_24);
 LV_FONT_DECLARE(sf_symbols_icons_28);
@@ -39,17 +44,18 @@ lv_obj_t *make_row(lv_obj_t *parent, int y, int w, int h) {
     return row;
 }
 
-static void on_top_back(lv_event_t *) {
-    lv_obj_t *cur = lv_scr_act();
-    if (cur == scr_nav)      nav_to(scr_nav,      active_clock(),  LV_SCR_LOAD_ANIM_MOVE_BOTTOM);
-    else if (cur == scr_weather)   nav_to(scr_weather,   scr_nav, LV_SCR_LOAD_ANIM_MOVE_RIGHT);
-    else if (cur == scr_settings)  nav_to(scr_settings,  scr_nav, LV_SCR_LOAD_ANIM_MOVE_RIGHT);
-    else if (cur == scr_calendar)  nav_to(scr_calendar,  scr_nav, LV_SCR_LOAD_ANIM_MOVE_RIGHT);
-    else if (cur == scr_music)     nav_to(scr_music,     scr_nav, LV_SCR_LOAD_ANIM_MOVE_RIGHT);
+// Null all global widget pointers for a lazy screen before it is destroyed.
+static void null_lazy_widgets(lv_obj_t *scr) {
+    if (scr == scr_weather) {
+        lbl_w_city = lbl_w_temp = lbl_w_time = nullptr;
+        for (int i = 0; i < 5; i++) lbl_w_fday[i] = lbl_w_fcond[i] = lbl_w_ftemp[i] = nullptr;
+    } else if (scr == scr_settings) {
+        lbl_bright_val = nullptr;
+        lbl_mem_heap = lbl_mem_lvgl = lbl_mem_psram = nullptr;
+    }
 }
 
 void nav_to(lv_obj_t *from, lv_obj_t *to, lv_scr_load_anim_t dir) {
-    // Show top bar on all screens except clock screens
     if (top_bar) {
         bool show = (to != scr_clock && to != scr_clock2 && to != scr_clock3 && to != scr_clock4);
         if (show) lv_obj_clear_flag(top_bar, LV_OBJ_FLAG_HIDDEN);
@@ -59,10 +65,69 @@ void nav_to(lv_obj_t *from, lv_obj_t *to, lv_scr_load_anim_t dir) {
     bool from_clock = (from == scr_clock || from == scr_clock2 || from == scr_clock3 || from == scr_clock4);
     bool to_clock   = (to   == scr_clock || to   == scr_clock2 || to   == scr_clock3 || to   == scr_clock4);
 
+    lv_obj_t *old_scr = from;
+
+    if (!from_clock) {
+        // Null global widget pointers so update_xxx() functions skip safely
+        null_lazy_widgets(from);
+        // Null the screen pointer — new navigations will recreate on demand
+        if      (from == scr_nav)      scr_nav      = nullptr;
+        else if (from == scr_weather)  scr_weather  = nullptr;
+        else if (from == scr_settings) scr_settings = nullptr;
+        else if (from == scr_calendar) scr_calendar = nullptr;
+        else if (from == scr_music)    scr_music    = nullptr;
+    }
+
     if (from_clock || to_clock || !anim_enabled) {
         lv_scr_load(to);
+        if (!from_clock && old_scr) lv_obj_del(old_scr);
     } else {
-        lv_scr_load_anim(to, dir, 280, 0, false);
+        lv_scr_load_anim(to, dir, 280, 0, true);  // auto_del destroys old_scr after animation
+    }
+}
+
+// ── Lazy navigation helpers ───────────────────────────────────────────────────
+
+void nav_to_nav(lv_obj_t *from, lv_scr_load_anim_t dir) {
+    if (!scr_nav) create_nav_screen();
+    nav_to(from, scr_nav, dir);
+}
+
+void nav_to_weather(lv_obj_t *from, lv_scr_load_anim_t dir) {
+    if (!scr_weather) {
+        create_weather_screen();
+        update_weather_screen();
+    }
+    nav_to(from, scr_weather, dir);
+}
+
+void nav_to_settings(lv_obj_t *from, lv_scr_load_anim_t dir) {
+    if (!scr_settings) create_settings_screen();
+    nav_to(from, scr_settings, dir);
+}
+
+void nav_to_calendar(lv_obj_t *from) {
+    if (!scr_calendar) create_calendar_screen();
+    nav_to(from, scr_calendar, LV_SCR_LOAD_ANIM_MOVE_LEFT);
+}
+
+void nav_to_music(lv_obj_t *from) {
+    if (!scr_music) {
+        create_music_screen();
+        update_music_screen();
+        if (g_art_ready) { g_art_ready = false; update_music_art(); }
+    }
+    nav_to(from, scr_music, LV_SCR_LOAD_ANIM_MOVE_LEFT);
+}
+
+// ── Top bar ───────────────────────────────────────────────────────────────────
+
+static void on_top_back(lv_event_t *) {
+    lv_obj_t *cur = lv_scr_act();
+    if (cur == scr_nav) {
+        nav_to(scr_nav, active_clock(), LV_SCR_LOAD_ANIM_MOVE_BOTTOM);
+    } else {
+        nav_to_nav(cur, LV_SCR_LOAD_ANIM_MOVE_RIGHT);
     }
 }
 
@@ -108,4 +173,22 @@ void create_top_bar() {
     lv_obj_set_style_text_color(lbl_top_time, lv_color_white(), LV_PART_MAIN);
     lv_label_set_text(lbl_top_time, "00:00");
     lv_obj_align(lbl_top_time, LV_ALIGN_TOP_RIGHT, -40, 32);
+
+    // Temporary: memory stats in center of top bar
+    lv_obj_t *lbl_top_mem = lv_label_create(top_bar);
+    lv_obj_set_style_text_font(lbl_top_mem, &sf_pro_display_medium_24, LV_PART_MAIN);
+    lv_obj_set_style_text_color(lbl_top_mem, lv_color_hex(0x555555), LV_PART_MAIN);
+    lv_label_set_text(lbl_top_mem, "...");
+    lv_obj_align(lbl_top_mem, LV_ALIGN_TOP_MID, 0, 32);
+
+    lv_timer_create([](lv_timer_t *t) {
+        lv_mem_monitor_t mon;
+        lv_mem_monitor(&mon);
+        char buf[32];
+        snprintf(buf, sizeof(buf), "H:%luK L:%u/%uK",
+                 ESP.getFreeHeap() / 1024,
+                 (mon.total_size - mon.free_size) / 1024,
+                 mon.total_size / 1024);
+        lv_label_set_text((lv_obj_t *)t->user_data, buf);
+    }, 2000, lbl_top_mem);
 }

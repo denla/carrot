@@ -141,6 +141,7 @@ static lv_obj_t *make_nav_btn(lv_obj_t *parent, int x, int y,
 }
 
 void create_calendar_screen() {
+    if (scr_calendar) return;
     HWDateTime now = hw_get_datetime();
     cal_year  = now.year;
     cal_month = now.month;

@@ -22,18 +22,10 @@ LV_FONT_DECLARE(sf_symbols_icons_32);
 static void on_clock_item(lv_event_t *) {
     nav_to(scr_nav, active_clock(), LV_SCR_LOAD_ANIM_MOVE_BOTTOM);
 }
-static void on_weather_item(lv_event_t *) {
-    nav_to(scr_nav, scr_weather, LV_SCR_LOAD_ANIM_MOVE_LEFT);
-}
-static void on_settings_item(lv_event_t *) {
-    nav_to(scr_nav, scr_settings, LV_SCR_LOAD_ANIM_MOVE_LEFT);
-}
-static void on_calendar_item(lv_event_t *) {
-    nav_to(scr_nav, scr_calendar, LV_SCR_LOAD_ANIM_MOVE_LEFT);
-}
-static void on_music_item(lv_event_t *) {
-    nav_to(scr_nav, scr_music, LV_SCR_LOAD_ANIM_MOVE_LEFT);
-}
+static void on_weather_item(lv_event_t *)  { nav_to_weather (scr_nav); }
+static void on_settings_item(lv_event_t *) { nav_to_settings(scr_nav); }
+static void on_calendar_item(lv_event_t *) { nav_to_calendar(scr_nav); }
+static void on_music_item(lv_event_t *)    { nav_to_music   (scr_nav); }
 
 // ── Menu item ─────────────────────────────────────────────────────────────────
 
@@ -85,6 +77,7 @@ static void on_nav_screen_loaded(lv_event_t *) {
 }
 
 void create_nav_screen() {
+    if (scr_nav) return;
     scr_nav = make_screen();
     lv_obj_add_event_cb(scr_nav, on_nav_screen_loaded, LV_EVENT_SCREEN_LOADED, NULL);
 
@@ -101,6 +94,7 @@ void create_nav_screen() {
     lv_obj_set_style_pad_top(list, 0, LV_PART_MAIN);
     lv_obj_set_style_pad_bottom(list, PADDING, LV_PART_MAIN);
     lv_obj_set_scrollbar_mode(list, LV_SCROLLBAR_MODE_OFF);
+    lv_obj_clear_flag(list, LV_OBJ_FLAG_SCROLL_ELASTIC);
     lv_obj_set_flex_flow(list, LV_FLEX_FLOW_COLUMN);
     lv_obj_set_style_pad_row(list, ITEM_GAP, LV_PART_MAIN);
 

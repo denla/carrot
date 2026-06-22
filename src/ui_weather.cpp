@@ -61,7 +61,7 @@ static lv_obj_t *make_box(lv_obj_t *parent, int x, int y, int w, int h) {
 static void on_weather_gesture(lv_event_t *) {
     if (lv_scr_act() != scr_weather) return;
     lv_dir_t dir = lv_indev_get_gesture_dir(lv_indev_get_act());
-    if (dir == LV_DIR_RIGHT) nav_to(scr_weather, scr_nav, LV_SCR_LOAD_ANIM_MOVE_RIGHT);
+    if (dir == LV_DIR_RIGHT) nav_to_nav(scr_weather, LV_SCR_LOAD_ANIM_MOVE_RIGHT);
 }
 
 // ── Создание экрана ────────────────────────────────────────────────────────
@@ -72,6 +72,7 @@ static void on_weather_gesture(lv_event_t *) {
 // y=289  h=159  — 5 колонок прогноза (space-between): день / иконка / темп
 
 void create_weather_screen() {
+    if (scr_weather) return;
     scr_weather = make_screen();
     lv_obj_add_event_cb(scr_weather, on_weather_gesture, LV_EVENT_GESTURE, NULL);
 
@@ -140,6 +141,7 @@ void create_weather_screen() {
 // ── Обновление данных ──────────────────────────────────────────────────────
 
 void update_weather_screen() {
+    if (!scr_weather) return;
     if (!g_weather.valid) return;
 
     if (lbl_w_icon)  lv_label_set_text(lbl_w_icon, icon_for_desc(g_weather.desc));

@@ -32,14 +32,19 @@ static int16_t touch_x[5], touch_y[5];
 
 static SensorPCF85063 rtc;
 
-// ── LVGL callbacks ────────────────────────────────────────────────────────────
+// ── Display sync watchdog ─────────────────────────────────────────────────────
 
-static bool IRAM_ATTR vsync_isr(esp_lcd_panel_handle_t panel,
+static volatile uint32_t s_vsync_count = 0;
+
+static bool IRAM_ATTR vsync_isr(esp_lcd_panel_handle_t,
                                  const esp_lcd_rgb_panel_event_data_t *,
                                  void *) {
-    esp_lcd_rgb_panel_restart(panel);
+    s_vsync_count++;
     return false;
 }
+
+// ── LVGL callbacks ────────────────────────────────────────────────────────────
+
 
 static void my_disp_flush(lv_disp_drv_t *disp, const lv_area_t *area, lv_color_t *color_p) {
     uint32_t w = area->x2 - area->x1 + 1;
@@ -104,7 +109,30 @@ void hw_display_restart() {
 #endif
 }
 
+void hw_display_check_sync() {
+#if defined(ESP32) && (CONFIG_IDF_TARGET_ESP32S3)
+    static uint32_t last_vsync = 0;
+    static uint32_t last_ms    = 0;
+    uint32_t now = millis();
+    if (now - last_ms < 500) return;   // check every 500ms
+    uint32_t cur = s_vsync_count;
+    if (cur == last_vsync) {           // vsync stalled — panel lost sync
+        hw_display_restart();
+        USBSerial.println("[disp] vsync stall — restarted panel");
+    }
+    last_vsync = cur;
+    last_ms    = now;
+#endif
+}
+
 void hw_init_display() {
+    // After a soft reset (USB replug, ESP.restart()) the RGB panel is still
+    // powered and running its DMA. Delay lets the panel accept new SPI init
+    // commands; without it gfx->begin() silently fails.
+    if (esp_reset_reason() != ESP_RST_POWERON) {
+        delay(500);
+    }
+
     set_brightness(brightness_pct);
     ledcAttach(BL_GPIO, BL_LEDC_FREQ, BL_LEDC_BITS);
     ledcWrite(BL_GPIO, (brightness_pct * 255) / 100);

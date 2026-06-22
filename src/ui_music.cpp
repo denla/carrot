@@ -41,7 +41,7 @@ static void on_next   (lv_event_t *) { set_cmd("next");   }
 static void on_music_gesture(lv_event_t *) {
     if (lv_scr_act() != scr_music) return;
     lv_dir_t dir = lv_indev_get_gesture_dir(lv_indev_get_act());
-    if (dir == LV_DIR_RIGHT) nav_to(scr_music, scr_nav, LV_SCR_LOAD_ANIM_MOVE_RIGHT);
+    if (dir == LV_DIR_RIGHT) nav_to_nav(scr_music, LV_SCR_LOAD_ANIM_MOVE_RIGHT);
 }
 
 // Creates a circular button: symbol at center, event cb on click
@@ -73,6 +73,7 @@ static lv_obj_t *make_btn(lv_obj_t *parent, int cx, int cy,
 }
 
 void create_music_screen() {
+    if (scr_music) return;
     scr_music = make_screen();
     lv_obj_add_event_cb(scr_music, on_music_gesture, LV_EVENT_GESTURE, NULL);
 
@@ -122,6 +123,7 @@ void create_music_screen() {
 }
 
 void update_music_screen() {
+    if (!scr_music) return;
     if (!g_music.valid) return;
 
     if (lbl_music_artist)
@@ -142,6 +144,7 @@ void update_music_screen() {
 }
 
 void update_music_art() {
+    if (!scr_music) return;
     if (!img_art || !g_art_buf) return;
     art_dsc.data = (const uint8_t *)g_art_buf;
     lv_img_set_src(img_art, &art_dsc);

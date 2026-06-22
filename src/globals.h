@@ -5,8 +5,6 @@
 #include "HWCDC.h"
 #include "config.h"
 
-LV_FONT_DECLARE(offbit_bold_32);
-LV_FONT_DECLARE(offbit_bold_20);
 
 #define LVGL_TICK_MS  2
 #define SDA_PIN       15
@@ -49,8 +47,6 @@ extern HWCDC USBSerial;
 
 // ── App state ────────────────────────────────────────────────────────────────
 
-extern bool    bt_enabled;
-extern bool    wifi_enabled;
 extern uint8_t brightness_pct;
 extern uint8_t ch32_output_reg;
 extern uint32_t lastMillis;
@@ -112,9 +108,10 @@ extern lv_obj_t *top_bar;
 extern lv_obj_t *lbl_top_time;
 
 // Settings widgets
-extern lv_obj_t *lbl_bt_val;
-extern lv_obj_t *lbl_wifi_val;
 extern lv_obj_t *lbl_bright_val;
+extern lv_obj_t *lbl_mem_heap;
+extern lv_obj_t *lbl_mem_lvgl;
+extern lv_obj_t *lbl_mem_psram;
 
 // Weather widgets (time shown via shared top bar)
 extern lv_obj_t *lbl_w_city;

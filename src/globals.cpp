@@ -2,8 +2,6 @@
 
 HWCDC USBSerial;
 
-bool    bt_enabled    = false;
-bool    wifi_enabled  = false;
 uint8_t brightness_pct  = 85;
 uint8_t ch32_output_reg = 0xFF;
 uint32_t lastMillis     = 0;
@@ -45,9 +43,10 @@ lv_obj_t *lbl_date = nullptr;
 
 lv_obj_t *top_bar        = nullptr;
 lv_obj_t *lbl_top_time   = nullptr;
-lv_obj_t *lbl_bt_val     = nullptr;
-lv_obj_t *lbl_wifi_val   = nullptr;
-lv_obj_t *lbl_bright_val = nullptr;
+lv_obj_t *lbl_bright_val  = nullptr;
+lv_obj_t *lbl_mem_heap    = nullptr;
+lv_obj_t *lbl_mem_lvgl    = nullptr;
+lv_obj_t *lbl_mem_psram   = nullptr;
 
 lv_obj_t *lbl_w_city     = nullptr;
 lv_obj_t *lbl_w_temp     = nullptr;

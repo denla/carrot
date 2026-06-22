@@ -83,6 +83,10 @@
 /*Input device read period in milliseconds*/
 #define LV_INDEV_DEF_READ_PERIOD 10     /*[ms]*/
 
+/*Scroll settings*/
+#define LV_INDEV_DEF_SCROLL_LIMIT    4   /*[px] Min distance to activate scrolling (default 10)*/
+#define LV_INDEV_DEF_SCROLL_THROW    6   /*[%]  Velocity removed per tick; lower = more momentum (default 10)*/
+
 /*Use a custom tick source that tells the elapsed time in milliseconds.
  *It removes the need to manually update the tick with `lv_tick_inc()`)*/
 #define LV_TICK_CUSTOM 0

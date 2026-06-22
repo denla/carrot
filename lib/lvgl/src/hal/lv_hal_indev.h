@@ -27,10 +27,14 @@ extern "C" {
  *********************/
 
 /*Drag threshold in pixels*/
+#ifndef LV_INDEV_DEF_SCROLL_LIMIT
 #define LV_INDEV_DEF_SCROLL_LIMIT         10
+#endif
 
 /*Drag throw slow-down in [%]. Greater value -> faster slow-down*/
+#ifndef LV_INDEV_DEF_SCROLL_THROW
 #define LV_INDEV_DEF_SCROLL_THROW         10
+#endif
 
 /*Long press time in milliseconds.
  *Time to send `LV_EVENT_LONG_PRESSSED`)*/
