@@ -72,6 +72,18 @@ extern volatile bool anim_enabled;
 extern WeatherData   g_weather;
 extern QueueHandle_t g_weather_queue;
 
+// ── GitHub data ──────────────────────────────────────────────────────────────
+
+struct GitHubData {
+    char    username[64];
+    int16_t contributions[21]; // [week*7+day], week 0 = oldest, day 0 = Monday
+    int16_t total;
+    bool    valid;
+};
+
+extern GitHubData    g_github;
+extern QueueHandle_t g_github_queue;
+
 // ── Music data ───────────────────────────────────────────────────────────────
 
 extern MusicData      g_music;
@@ -98,6 +110,7 @@ extern lv_obj_t *scr_settings;
 extern lv_obj_t *scr_weather;
 extern lv_obj_t *scr_calendar;
 extern lv_obj_t *scr_music;
+extern lv_obj_t *scr_github;
 
 // Clock widgets
 extern lv_obj_t *lbl_time;

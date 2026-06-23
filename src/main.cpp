@@ -9,6 +9,7 @@
 #include "ui_clock4.h"
 #include "ui_weather.h"
 #include "ui_music.h"
+#include "ui_github.h"
 #include "weather.h"
 #include "web_api.h"
 #include <WiFi.h>
@@ -49,6 +50,7 @@ void setup() {
 
     g_weather_queue = xQueueCreate(1, sizeof(WeatherData));
     g_music_queue   = xQueueCreate(1, sizeof(MusicData));
+    g_github_queue  = xQueueCreate(1, sizeof(GitHubData));
     g_art_buf       = (uint8_t*)ps_malloc(ART_SIZE);
 
     hw_init_i2c();
@@ -112,6 +114,12 @@ void loop() {
     } else if (g_art_ready) {
         g_art_ready = false;
         update_music_art();
+    }
+
+    GitHubData gd;
+    if (xQueueReceive(g_github_queue, &gd, 0) == pdTRUE) {
+        g_github = gd;
+        update_github_screen();
     }
 
     if (pending_brightness >= 0) {

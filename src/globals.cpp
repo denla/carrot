@@ -21,6 +21,9 @@ volatile bool anim_enabled        = true;
 WeatherData  g_weather      = {0, 0, 0, "нет данных", {0,0,0,0,0}, {0,0,0,0,0}, {"","","","",""}, false};
 QueueHandle_t g_weather_queue = nullptr;
 
+GitHubData   g_github       = {{}, {}, 0, false};
+QueueHandle_t g_github_queue = nullptr;
+
 MusicData    g_music        = {"", "", false, false};
 QueueHandle_t g_music_queue = nullptr;
 volatile char music_pending_cmd[8] = "";
@@ -37,6 +40,7 @@ lv_obj_t *scr_settings = nullptr;
 lv_obj_t *scr_weather  = nullptr;
 lv_obj_t *scr_calendar = nullptr;
 lv_obj_t *scr_music    = nullptr;
+lv_obj_t *scr_github   = nullptr;
 
 lv_obj_t *lbl_time = nullptr;
 lv_obj_t *lbl_date = nullptr;

@@ -229,6 +229,25 @@ static void api_get_music_cmd() {
     mgmt_server.send(200, "text/plain", cmd);
 }
 
+// POST /api/github — username + contributions[0..20] + total
+static void api_push_github() {
+    cors_headers();
+    GitHubData gd = {};
+    if (mgmt_server.hasArg("username"))
+        mgmt_server.arg("username").toCharArray(gd.username, sizeof(gd.username));
+    if (mgmt_server.hasArg("total"))
+        gd.total = (int16_t)mgmt_server.arg("total").toInt();
+    char key[4];
+    for (int i = 0; i < 21; i++) {
+        snprintf(key, sizeof(key), "c%d", i);
+        if (mgmt_server.hasArg(key))
+            gd.contributions[i] = (int16_t)mgmt_server.arg(key).toInt();
+    }
+    gd.valid = true;
+    xQueueOverwrite(g_github_queue, &gd);
+    mgmt_server.send(200, "application/json", "{\"ok\":true}");
+}
+
 static void api_restart() {
     cors_headers();
     mgmt_server.send(200, "application/json", "{\"ok\":true}");
@@ -264,6 +283,8 @@ void web_server_task(void *pv) {
     mgmt_server.on("/api/music/cmd",     HTTP_GET,     api_get_music_cmd);
     mgmt_server.on("/api/music/art",     HTTP_POST,    api_push_art);
     mgmt_server.on("/api/music/art",     HTTP_OPTIONS, handle_options);
+    mgmt_server.on("/api/github",         HTTP_POST,    api_push_github);
+    mgmt_server.on("/api/github",         HTTP_OPTIONS, handle_options);
     mgmt_server.on("/api/restart",       HTTP_POST,    api_restart);
     mgmt_server.on("/api/restart",       HTTP_OPTIONS, handle_options);
     mgmt_server.onNotFound([]() {

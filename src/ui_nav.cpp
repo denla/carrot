@@ -3,6 +3,7 @@
 #include "ui_music.h"
 #include "ui_common.h"
 #include "hw.h"
+#include "ui_github.h"
 
 LV_FONT_DECLARE(sf_pro_display_medium_24);
 LV_FONT_DECLARE(sf_pro_display_medium_32);
@@ -26,6 +27,7 @@ static void on_weather_item(lv_event_t *)  { nav_to_weather (scr_nav); }
 static void on_settings_item(lv_event_t *) { nav_to_settings(scr_nav); }
 static void on_calendar_item(lv_event_t *) { nav_to_calendar(scr_nav); }
 static void on_music_item(lv_event_t *)    { nav_to_music   (scr_nav); }
+static void on_github_item(lv_event_t *)   { nav_to_github  (scr_nav); }
 
 // ── Menu item ─────────────────────────────────────────────────────────────────
 
@@ -111,5 +113,6 @@ void create_nav_screen() {
     make_item(list, ICON_WEATHER,  "Weather",  on_weather_item,  false);
     make_item(list, ICON_NOTES,    "Calendar", on_calendar_item, false);
     make_item(list, LV_SYMBOL_AUDIO, "Music",  on_music_item,    false, &lv_font_montserrat_32);
+    make_item(list, LV_SYMBOL_EDIT, "GitHub",   on_github_item,   false, &lv_font_montserrat_32);
     make_item(list, ICON_SETTINGS, "Settings", on_settings_item, false);
 }

@@ -21,6 +21,7 @@ void nav_to_weather (lv_obj_t *from, lv_scr_load_anim_t dir = LV_SCR_LOAD_ANIM_M
 void nav_to_settings(lv_obj_t *from, lv_scr_load_anim_t dir = LV_SCR_LOAD_ANIM_MOVE_LEFT);
 void nav_to_calendar(lv_obj_t *from);
 void nav_to_music   (lv_obj_t *from);
+void nav_to_github  (lv_obj_t *from);
 
 // Shared top bar (Back + time) that floats above all non-clock screens
 void create_top_bar();

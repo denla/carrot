@@ -4,6 +4,7 @@
 #include "ui_settings.h"
 #include "ui_calendar.h"
 #include "ui_music.h"
+#include "ui_github.h"
 
 LV_FONT_DECLARE(sf_pro_display_medium_24);
 LV_FONT_DECLARE(sf_symbols_icons_28);
@@ -76,6 +77,7 @@ void nav_to(lv_obj_t *from, lv_obj_t *to, lv_scr_load_anim_t dir) {
         else if (from == scr_settings) scr_settings = nullptr;
         else if (from == scr_calendar) scr_calendar = nullptr;
         else if (from == scr_music)    scr_music    = nullptr;
+        else if (from == scr_github)   scr_github   = nullptr;
     }
 
     if (from_clock || to_clock || !anim_enabled) {
@@ -118,6 +120,14 @@ void nav_to_music(lv_obj_t *from) {
         if (g_art_ready) { g_art_ready = false; update_music_art(); }
     }
     nav_to(from, scr_music, LV_SCR_LOAD_ANIM_MOVE_LEFT);
+}
+
+void nav_to_github(lv_obj_t *from) {
+    if (!scr_github) {
+        create_github_screen();
+        update_github_screen();
+    }
+    nav_to(from, scr_github, LV_SCR_LOAD_ANIM_MOVE_LEFT);
 }
 
 // ── Top bar ───────────────────────────────────────────────────────────────────
