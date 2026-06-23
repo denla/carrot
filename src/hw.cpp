@@ -131,11 +131,10 @@ void hw_init_display() {
 
 void hw_init_lvgl() {
     static lv_disp_draw_buf_t draw_buf;
-    // Two strip buffers (1/5 screen each) in PSRAM — LVGL flushes only dirty regions.
-    static const size_t BUF_PX = SCREEN_W * (SCREEN_H / 5);
-    static lv_color_t *lvgl_buf1 = (lv_color_t*)heap_caps_aligned_alloc(64, BUF_PX * sizeof(lv_color_t), MALLOC_CAP_SPIRAM | MALLOC_CAP_DMA);
-    static lv_color_t *lvgl_buf2 = (lv_color_t*)heap_caps_aligned_alloc(64, BUF_PX * sizeof(lv_color_t), MALLOC_CAP_SPIRAM | MALLOC_CAP_DMA);
-    assert(lvgl_buf1 && lvgl_buf2 && "LVGL PSRAM buffer alloc failed");
+    static const size_t BUF_PX = SCREEN_W * (SCREEN_H / 10);
+    static lv_color_t *lvgl_buf1 = (lv_color_t*)heap_caps_malloc(BUF_PX * sizeof(lv_color_t), MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
+    static lv_color_t *lvgl_buf2 = (lv_color_t*)heap_caps_malloc(BUF_PX * sizeof(lv_color_t), MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
+    assert(lvgl_buf1 && lvgl_buf2 && "LVGL SRAM buffer alloc failed");
 
     lv_init();
     lv_disp_draw_buf_init(&draw_buf, lvgl_buf1, lvgl_buf2, BUF_PX);
