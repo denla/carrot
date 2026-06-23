@@ -1,3 +1,7 @@
 .pio/
 include/config.h
 managed_components/
+.DS_Store
+.vscode/
+.claude/
+.dummy/

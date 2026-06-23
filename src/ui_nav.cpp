@@ -70,10 +70,19 @@ static void make_item(lv_obj_t *list, const char *icon_str, const char *label,
 static lv_obj_t *nav_list = nullptr;
 
 static void on_nav_screen_loaded(lv_event_t *) {
-    if (nav_list) lv_obj_scroll_to_y(nav_list, 0, LV_ANIM_OFF);
-    // Kill swipe inertia so it doesn't scroll the list after slide animation ends
+    // Kill residual swipe inertia from the gesture that opened this screen
     lv_indev_t *indev = lv_indev_get_next(NULL);
     while (indev) { lv_indev_reset(indev, NULL); indev = lv_indev_get_next(indev); }
+
+    if (!nav_list) return;
+    lv_obj_scroll_to_y(nav_list, 0, LV_ANIM_OFF);
+
+    // Disable scrolling briefly so the tail of the swipe can't re-scroll the list
+    lv_obj_clear_flag(nav_list, LV_OBJ_FLAG_SCROLLABLE);
+    lv_timer_t *t = lv_timer_create([](lv_timer_t *t) {
+        lv_obj_add_flag((lv_obj_t *)t->user_data, LV_OBJ_FLAG_SCROLLABLE);
+    }, 300, nav_list);
+    lv_timer_set_repeat_count(t, 1);
 }
 
 void create_nav_screen() {

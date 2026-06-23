@@ -69,11 +69,8 @@ void setup() {
 
     WiFi.begin(WIFI_SSID, WIFI_PASS);
 
-    lv_mem_monitor_t mon;
-    lv_mem_monitor(&mon);
-    USBSerial.printf("Heap=%u PSRAM=%u/%u LVGL=%u/%u\n",
-        ESP.getFreeHeap(), ESP.getFreePsram(), ESP.getPsramSize(),
-        mon.total_size - mon.free_size, mon.total_size);
+    USBSerial.printf("Heap=%u PSRAM=%u/%u\n",
+        ESP.getFreeHeap(), ESP.getFreePsram(), ESP.getPsramSize());
 
     xTaskCreatePinnedToCore(web_server_task, "webserver", 16384, NULL, 1, NULL, 1);
 

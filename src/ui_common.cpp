@@ -175,20 +175,4 @@ void create_top_bar() {
     lv_obj_align(lbl_top_time, LV_ALIGN_TOP_RIGHT, -40, 32);
 
     // Temporary: memory stats in center of top bar
-    lv_obj_t *lbl_top_mem = lv_label_create(top_bar);
-    lv_obj_set_style_text_font(lbl_top_mem, &sf_pro_display_medium_24, LV_PART_MAIN);
-    lv_obj_set_style_text_color(lbl_top_mem, lv_color_hex(0x555555), LV_PART_MAIN);
-    lv_label_set_text(lbl_top_mem, "...");
-    lv_obj_align(lbl_top_mem, LV_ALIGN_TOP_MID, 0, 32);
-
-    lv_timer_create([](lv_timer_t *t) {
-        lv_mem_monitor_t mon;
-        lv_mem_monitor(&mon);
-        char buf[32];
-        snprintf(buf, sizeof(buf), "H:%luK L:%u/%uK",
-                 ESP.getFreeHeap() / 1024,
-                 (mon.total_size - mon.free_size) / 1024,
-                 mon.total_size / 1024);
-        lv_label_set_text((lv_obj_t *)t->user_data, buf);
-    }, 2000, lbl_top_mem);
 }

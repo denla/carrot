@@ -3,14 +3,8 @@
 #include "Arduino_GFX_Library.h"
 #include "TouchDrvGT911.hpp"
 
-// ROM function: flush dirty D-cache lines to physical PSRAM.
-// Required so RGB DMA (which bypasses cache) reads fresh pixel data.
-#if defined(ESP32) && (CONFIG_IDF_TARGET_ESP32S3)
-extern int Cache_WriteBack_Addr(uint32_t addr, uint32_t size);
-#endif
 
 // ── Display hardware (private to this module) ─────────────────────────────────
-static void *s_frame_buf = nullptr;
 
 static Arduino_DataBus *bus = new Arduino_SWSPI(
     GFX_NOT_DEFINED, 42, 2, 1, GFX_NOT_DEFINED);
@@ -24,7 +18,7 @@ static Arduino_ESP32RGBPanel *rgbpanel = new Arduino_ESP32RGBPanel(
     1, 10, 8, 20);
 
 static Arduino_RGB_Display *gfx = new Arduino_RGB_Display(
-    SCREEN_W, SCREEN_H, rgbpanel, 2, true,
+    SCREEN_W, SCREEN_H, rgbpanel, 0, true,
     bus, GFX_NOT_DEFINED, st7701_type1_init_operations, sizeof(st7701_type1_init_operations));
 
 static TouchDrvGT911 GT911;
@@ -45,26 +39,17 @@ static bool IRAM_ATTR vsync_isr(esp_lcd_panel_handle_t,
 
 // ── LVGL callbacks ────────────────────────────────────────────────────────────
 
-
 static void my_disp_flush(lv_disp_drv_t *disp, const lv_area_t *area, lv_color_t *color_p) {
-    uint32_t w = area->x2 - area->x1 + 1;
-    uint32_t h = area->y2 - area->y1 + 1;
-#if LV_COLOR_16_SWAP
-    gfx->draw16bitBeRGBBitmap(area->x1, area->y1, (uint16_t *)&color_p->full, w, h);
-#else
-    gfx->draw16bitRGBBitmap(area->x1, area->y1, (uint16_t *)&color_p->full, w, h);
-#endif
-#if defined(ESP32) && (CONFIG_IDF_TARGET_ESP32S3)
-    if (s_frame_buf) Cache_WriteBack_Addr((uint32_t)s_frame_buf, SCREEN_W * SCREEN_H * 2);
-#endif
+    esp_lcd_panel_draw_bitmap(rgbpanel->getPanelHandle(),
+        area->x1, area->y1, area->x2 + 1, area->y2 + 1, color_p);
     lv_disp_flush_ready(disp);
 }
 
 static void my_touchpad_read(lv_indev_drv_t *indev_drv, lv_indev_data_t *data) {
     uint8_t touched = GT911.getPoint(touch_x, touch_y, GT911.getSupportTouchPoint());
     if (touched > 0) {
-        data->point.x = SCREEN_W - touch_x[0];
-        data->point.y = SCREEN_H - touch_y[0];
+        data->point.x = touch_x[0];
+        data->point.y = touch_y[0];
         data->state   = LV_INDEV_STATE_PR;
     } else {
         data->state = LV_INDEV_STATE_REL;
@@ -138,7 +123,6 @@ void hw_init_display() {
     ledcWrite(BL_GPIO, (brightness_pct * 255) / 100);
     gfx->begin();
 
-    esp_lcd_rgb_panel_get_frame_buffer(rgbpanel->getPanelHandle(), 1, &s_frame_buf);
 
     esp_lcd_rgb_panel_event_callbacks_t cbs = {};
     cbs.on_vsync = vsync_isr;
@@ -147,10 +131,14 @@ void hw_init_display() {
 
 void hw_init_lvgl() {
     static lv_disp_draw_buf_t draw_buf;
-    static lv_color_t buf[SCREEN_W * SCREEN_H / 10];
+    // Two strip buffers (1/5 screen each) in PSRAM — LVGL flushes only dirty regions.
+    static const size_t BUF_PX = SCREEN_W * (SCREEN_H / 5);
+    static lv_color_t *lvgl_buf1 = (lv_color_t*)heap_caps_aligned_alloc(64, BUF_PX * sizeof(lv_color_t), MALLOC_CAP_SPIRAM | MALLOC_CAP_DMA);
+    static lv_color_t *lvgl_buf2 = (lv_color_t*)heap_caps_aligned_alloc(64, BUF_PX * sizeof(lv_color_t), MALLOC_CAP_SPIRAM | MALLOC_CAP_DMA);
+    assert(lvgl_buf1 && lvgl_buf2 && "LVGL PSRAM buffer alloc failed");
 
     lv_init();
-    lv_disp_draw_buf_init(&draw_buf, buf, NULL, SCREEN_W * SCREEN_H / 10);
+    lv_disp_draw_buf_init(&draw_buf, lvgl_buf1, lvgl_buf2, BUF_PX);
 
     static lv_disp_drv_t disp_drv;
     lv_disp_drv_init(&disp_drv);
@@ -158,6 +146,8 @@ void hw_init_lvgl() {
     disp_drv.ver_res  = SCREEN_H;
     disp_drv.flush_cb = my_disp_flush;
     disp_drv.draw_buf = &draw_buf;
+    disp_drv.sw_rotate = 1;
+    disp_drv.rotated   = LV_DISP_ROT_180;
     lv_disp_drv_register(&disp_drv);
 
     static lv_indev_drv_t indev_drv;
@@ -173,6 +163,20 @@ void hw_init_lvgl() {
 
     lv_disp_set_bg_color(lv_disp_get_default(), lv_color_black());
     lv_disp_set_bg_opa(lv_disp_get_default(), LV_OPA_COVER);
+
+    // 1×1 invisible object on the system layer. A 15 ms timer invalidates it,
+    // forcing flush_cb ~67 fps even on static screens. Without this, the PSRAM
+    // controller idles between LVGL updates and the DMA FIFO underruns, showing
+    // as horizontal jitter that disappears only when animations are running.
+    static lv_obj_t *hb_obj = lv_obj_create(lv_layer_sys());
+    lv_obj_set_size(hb_obj, 1, 1);
+    lv_obj_set_pos(hb_obj, 0, 0);
+    lv_obj_set_style_bg_opa(hb_obj, LV_OPA_0, 0);
+    lv_obj_set_style_border_width(hb_obj, 0, 0);
+    lv_obj_set_style_pad_all(hb_obj, 0, 0);
+    lv_timer_create([](lv_timer_t *t) {
+        lv_obj_invalidate(static_cast<lv_obj_t *>(t->user_data));
+    }, 15, hb_obj);
 }
 
 void set_brightness(uint8_t pct) {
