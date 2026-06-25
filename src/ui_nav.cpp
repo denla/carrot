@@ -72,7 +72,16 @@ static void make_item(lv_obj_t *list, const char *icon_str, const char *label,
 
 // ── Public ────────────────────────────────────────────────────────────────────
 
-static lv_obj_t *nav_list = nullptr;
+static lv_obj_t   *nav_list      = nullptr;
+static lv_timer_t *s_scroll_timer = nullptr;
+
+static void on_nav_delete(lv_event_t *) {
+    if (s_scroll_timer) {
+        lv_timer_del(s_scroll_timer);
+        s_scroll_timer = nullptr;
+    }
+    nav_list = nullptr;
+}
 
 static void on_nav_screen_loaded(lv_event_t *) {
     lv_indev_t *indev = lv_indev_get_next(NULL);
@@ -82,15 +91,18 @@ static void on_nav_screen_loaded(lv_event_t *) {
     lv_obj_scroll_to_y(nav_list, 0, LV_ANIM_OFF);
 
     lv_obj_clear_flag(nav_list, LV_OBJ_FLAG_SCROLLABLE);
-    lv_timer_t *t = lv_timer_create([](lv_timer_t *t) {
+    if (s_scroll_timer) { lv_timer_del(s_scroll_timer); }
+    s_scroll_timer = lv_timer_create([](lv_timer_t *t) {
+        s_scroll_timer = nullptr;
         lv_obj_add_flag((lv_obj_t *)t->user_data, LV_OBJ_FLAG_SCROLLABLE);
     }, 300, nav_list);
-    lv_timer_set_repeat_count(t, 1);
+    lv_timer_set_repeat_count(s_scroll_timer, 1);
 }
 
 void create_nav_screen() {
     if (scr_nav) return;
     scr_nav = make_screen();
+    lv_obj_add_event_cb(scr_nav, on_nav_delete,        LV_EVENT_DELETE,        NULL);
     lv_obj_add_event_cb(scr_nav, on_nav_screen_loaded, LV_EVENT_SCREEN_LOADED, NULL);
 
     // Scrollable column — starts below shared top bar (32 pad + 29 bar + 20 gap = 81)

@@ -84,7 +84,7 @@ void nav_to(lv_obj_t *from, lv_obj_t *to, lv_scr_load_anim_t dir) {
 
     if (from_clock || to_clock || !anim_enabled) {
         lv_scr_load(to);
-        if (!from_clock && old_scr) lv_obj_del(old_scr);
+        if (!from_clock && old_scr) lv_obj_del_async(old_scr);
     } else {
         lv_scr_load_anim(to, dir, 280, 0, true);  // auto_del destroys old_scr after animation
     }
