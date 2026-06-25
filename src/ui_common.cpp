@@ -5,6 +5,7 @@
 #include "ui_calendar.h"
 #include "ui_music.h"
 #include "ui_github.h"
+#include "ui_lamp.h"
 
 LV_FONT_DECLARE(sf_pro_display_medium_24);
 LV_FONT_DECLARE(sf_symbols_icons_28);
@@ -58,13 +59,13 @@ static void null_lazy_widgets(lv_obj_t *scr) {
 
 void nav_to(lv_obj_t *from, lv_obj_t *to, lv_scr_load_anim_t dir) {
     if (top_bar) {
-        bool show = (to != scr_clock && to != scr_clock2 && to != scr_clock3 && to != scr_clock4);
+        bool show = (to != scr_clock && to != scr_clock2 && to != scr_clock3 && to != scr_clock4 && to != scr_clock5);
         if (show) lv_obj_clear_flag(top_bar, LV_OBJ_FLAG_HIDDEN);
         else      lv_obj_add_flag(top_bar,   LV_OBJ_FLAG_HIDDEN);
     }
 
-    bool from_clock = (from == scr_clock || from == scr_clock2 || from == scr_clock3 || from == scr_clock4);
-    bool to_clock   = (to   == scr_clock || to   == scr_clock2 || to   == scr_clock3 || to   == scr_clock4);
+    bool from_clock = (from == scr_clock || from == scr_clock2 || from == scr_clock3 || from == scr_clock4 || from == scr_clock5);
+    bool to_clock   = (to   == scr_clock || to   == scr_clock2 || to   == scr_clock3 || to   == scr_clock4 || to   == scr_clock5);
 
     lv_obj_t *old_scr = from;
 
@@ -78,6 +79,7 @@ void nav_to(lv_obj_t *from, lv_obj_t *to, lv_scr_load_anim_t dir) {
         else if (from == scr_calendar) scr_calendar = nullptr;
         else if (from == scr_music)    scr_music    = nullptr;
         else if (from == scr_github)   scr_github   = nullptr;
+        else if (from == scr_lamp)     scr_lamp     = nullptr;
     }
 
     if (from_clock || to_clock || !anim_enabled) {
@@ -128,6 +130,14 @@ void nav_to_github(lv_obj_t *from) {
         update_github_screen();
     }
     nav_to(from, scr_github, LV_SCR_LOAD_ANIM_MOVE_LEFT);
+}
+
+void nav_to_lamp(lv_obj_t *from) {
+    if (!scr_lamp) {
+        create_lamp_screen();
+        update_lamp_screen();
+    }
+    nav_to(from, scr_lamp, LV_SCR_LOAD_ANIM_MOVE_LEFT);
 }
 
 // ── Top bar ───────────────────────────────────────────────────────────────────

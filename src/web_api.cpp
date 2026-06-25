@@ -93,7 +93,7 @@ static void api_set_clockstyle() {
         return;
     }
     int s = mgmt_server.arg("style").toInt();
-    if (s < 0 || s > 3) {
+    if (s < 0 || s > 4) {
         mgmt_server.send(400, "application/json", "{\"error\":\"invalid style\"}");
         return;
     }
@@ -230,18 +230,35 @@ static void api_get_music_cmd() {
 }
 
 // POST /api/github — username + contributions[0..20] + total
+// Web app sends: user=<name>&data=<21 level digits 0-4>&total=<n>
+// Legacy / curl: username=<name>&c0=<n>&c1=<n>...&c20=<n>&total=<n>
 static void api_push_github() {
     cors_headers();
     GitHubData gd = {};
-    if (mgmt_server.hasArg("username"))
+    // accept both 'user' (web app) and 'username' (legacy)
+    if (mgmt_server.hasArg("user"))
+        mgmt_server.arg("user").toCharArray(gd.username, sizeof(gd.username));
+    else if (mgmt_server.hasArg("username"))
         mgmt_server.arg("username").toCharArray(gd.username, sizeof(gd.username));
     if (mgmt_server.hasArg("total"))
         gd.total = (int16_t)mgmt_server.arg("total").toInt();
-    char key[4];
-    for (int i = 0; i < 21; i++) {
-        snprintf(key, sizeof(key), "c%d", i);
-        if (mgmt_server.hasArg(key))
-            gd.contributions[i] = (int16_t)mgmt_server.arg(key).toInt();
+    if (mgmt_server.hasArg("data")) {
+        // compact level string, one char per cell (0-4), newest cell last
+        // take the last 21 chars if the string is longer
+        String d = mgmt_server.arg("data");
+        int offset = (int)d.length() - 21;
+        if (offset < 0) offset = 0;
+        for (int i = 0; i < 21 && (offset + i) < (int)d.length(); i++) {
+            char ch = d[offset + i];
+            gd.contributions[i] = (ch >= '0' && ch <= '9') ? (int16_t)(ch - '0') : 0;
+        }
+    } else {
+        char key[4];
+        for (int i = 0; i < 21; i++) {
+            snprintf(key, sizeof(key), "c%d", i);
+            if (mgmt_server.hasArg(key))
+                gd.contributions[i] = (int16_t)mgmt_server.arg(key).toInt();
+        }
     }
     gd.valid = true;
     xQueueOverwrite(g_github_queue, &gd);

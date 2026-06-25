@@ -22,6 +22,7 @@ void nav_to_settings(lv_obj_t *from, lv_scr_load_anim_t dir = LV_SCR_LOAD_ANIM_M
 void nav_to_calendar(lv_obj_t *from);
 void nav_to_music   (lv_obj_t *from);
 void nav_to_github  (lv_obj_t *from);
+void nav_to_lamp    (lv_obj_t *from);
 
 // Shared top bar (Back + time) that floats above all non-clock screens
 void create_top_bar();
@@ -31,5 +32,6 @@ inline lv_obj_t *active_clock() {
     if (clock_style == 1) return scr_clock2;
     if (clock_style == 2) return scr_clock3;
     if (clock_style == 3) return scr_clock4;
+    if (clock_style == 4) return scr_clock5;
     return scr_clock;
 }

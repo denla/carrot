@@ -28,7 +28,7 @@ static SensorPCF85063 rtc;
 
 // ── Display sync watchdog ─────────────────────────────────────────────────────
 
-static volatile uint32_t s_vsync_count = 0;
+volatile uint32_t s_vsync_count = 0;
 
 static bool IRAM_ATTR vsync_isr(esp_lcd_panel_handle_t,
                                  const esp_lcd_rgb_panel_event_data_t *,
@@ -111,18 +111,15 @@ void hw_display_check_sync() {
 }
 
 void hw_init_display() {
-    // After a soft reset (USB replug, ESP.restart()) the RGB panel is still
-    // powered and running its DMA. Delay lets the panel accept new SPI init
-    // commands; without it gfx->begin() silently fails.
-    if (esp_reset_reason() != ESP_RST_POWERON) {
-        delay(500);
-    }
+    // Power-on: USB VBUS / 3.3V rail needs time to settle before the ST7701
+    // SPI init commands will be accepted. Soft reset: DMA may still be active.
+    // 1000 ms covers both reliably without needing to distinguish reset reason.
+    delay(1000);
 
     set_brightness(brightness_pct);
     ledcAttach(BL_GPIO, BL_LEDC_FREQ, BL_LEDC_BITS);
     ledcWrite(BL_GPIO, (brightness_pct * 255) / 100);
     gfx->begin();
-
 
     esp_lcd_rgb_panel_event_callbacks_t cbs = {};
     cbs.on_vsync = vsync_isr;

@@ -7,11 +7,14 @@
 #include "ui_clock2.h"
 #include "ui_clock3.h"
 #include "ui_clock4.h"
+#include "ui_clock5.h"
 #include "ui_weather.h"
 #include "ui_music.h"
 #include "ui_github.h"
 #include "weather.h"
 #include "web_api.h"
+#include "lamp.h"
+#include "ui_lamp.h"
 #include <WiFi.h>
 
 static void create_active_clock() {
@@ -19,6 +22,7 @@ static void create_active_clock() {
         case 1: create_clock2_screen(); break;
         case 2: create_clock3_screen(); break;
         case 3: create_clock4_screen(); break;
+        case 4: create_clock5_screen(); break;
         default: create_clock_screen(); break;
     }
 }
@@ -32,6 +36,7 @@ static void destroy_active_clock() {
                       lv_obj_del(scr_clock3); scr_clock3 = nullptr; }
     if (scr_clock4) { lbl_c4_date = nullptr;
                       lv_obj_del(scr_clock4); scr_clock4 = nullptr; }
+    if (scr_clock5) { lv_obj_del(scr_clock5); scr_clock5 = nullptr; }
 }
 
 void setup() {
@@ -62,17 +67,22 @@ void setup() {
     create_active_clock();
     create_top_bar();
 
-    lv_scr_load(active_clock());
+    lv_obj_t *clk = active_clock();
+    if (clk) lv_scr_load(clk);
+    else      USBSerial.println("[ERROR] active_clock() null — clock screen not created");
     update_clock();
     update_clock2();
     update_clock3();
     update_clock4();
+    update_clock5();
     set_brightness(brightness_pct);
 
     WiFi.begin(WIFI_SSID, WIFI_PASS);
+    lamp_init();
 
-    USBSerial.printf("Heap=%u PSRAM=%u/%u\n",
-        ESP.getFreeHeap(), ESP.getFreePsram(), ESP.getPsramSize());
+    USBSerial.printf("Heap=%u PSRAM=%u/%u reset=%d\n",
+        ESP.getFreeHeap(), ESP.getFreePsram(), ESP.getPsramSize(),
+        (int)esp_reset_reason());
 
     xTaskCreatePinnedToCore(web_server_task, "webserver", 16384, NULL, 1, NULL, 1);
 
@@ -80,6 +90,19 @@ void setup() {
 }
 
 void loop() {
+    // If the ST7701 SPI init failed silently (no vsync in first 3 s), restart
+    // once so the 1000 ms power-on delay gets another chance to succeed.
+    static bool vsync_ok = false;
+    if (!vsync_ok) {
+        if (hw_vsync_count() > 0) {
+            vsync_ok = true;
+        } else if (millis() > 3000) {
+            USBSerial.println("[disp] no vsync at 3s — restarting");
+            delay(100);
+            ESP.restart();
+        }
+    }
+
     lv_timer_handler();
     hw_display_check_sync();
     delay(5);
@@ -89,6 +112,7 @@ void loop() {
         update_clock();
         update_clock2();
         update_clock3();
+        update_clock5();
     }
 
     static uint32_t lastClock4Ms = 0;
@@ -122,6 +146,8 @@ void loop() {
         update_github_screen();
     }
 
+    if (lamp_take_update()) update_lamp_screen();
+
     if (pending_brightness >= 0) {
         set_brightness((uint8_t)pending_brightness);
         pending_brightness = -1;
@@ -138,6 +164,7 @@ void loop() {
         update_clock2();
         update_clock3();
         update_clock4();
+        update_clock5();
     }
 
     if (pending_time.valid) {

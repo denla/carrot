@@ -35,12 +35,14 @@ lv_obj_t *scr_clock    = nullptr;
 lv_obj_t *scr_clock2   = nullptr;
 lv_obj_t *scr_clock3   = nullptr;
 lv_obj_t *scr_clock4   = nullptr;
+lv_obj_t *scr_clock5   = nullptr;
 lv_obj_t *scr_nav      = nullptr;
 lv_obj_t *scr_settings = nullptr;
 lv_obj_t *scr_weather  = nullptr;
 lv_obj_t *scr_calendar = nullptr;
 lv_obj_t *scr_music    = nullptr;
 lv_obj_t *scr_github   = nullptr;
+lv_obj_t *scr_lamp     = nullptr;
 
 lv_obj_t *lbl_time = nullptr;
 lv_obj_t *lbl_date = nullptr;

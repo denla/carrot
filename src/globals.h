@@ -105,12 +105,14 @@ extern lv_obj_t *scr_clock;
 extern lv_obj_t *scr_clock2;
 extern lv_obj_t *scr_clock3;
 extern lv_obj_t *scr_clock4;
+extern lv_obj_t *scr_clock5;
 extern lv_obj_t *scr_nav;
 extern lv_obj_t *scr_settings;
 extern lv_obj_t *scr_weather;
 extern lv_obj_t *scr_calendar;
 extern lv_obj_t *scr_music;
 extern lv_obj_t *scr_github;
+extern lv_obj_t *scr_lamp;
 
 // Clock widgets
 extern lv_obj_t *lbl_time;

@@ -10,11 +10,12 @@ LV_FONT_DECLARE(sf_pro_display_medium_24);
 #define DOT_VSTEP   59   // 43 px dot + 16 px gap
 #define X0          32
 #define Y_CONTRIB   81
-#define Y_LABELS   130   // Y_CONTRIB + 29 + 20
-#define Y_DOTS     175   // Y_LABELS  + 29 + 16
+#define Y_LABELS   130
+#define Y_DOTS     175
 
-static lv_obj_t *s_lbl_contrib = nullptr;
-static lv_obj_t *s_dots[GH_ROWS][GH_COLS] = {};
+static lv_obj_t  *s_lbl_contrib = nullptr;
+static lv_obj_t  *s_dots[GH_ROWS][GH_COLS] = {};
+static lv_style_t s_dot_styles[GH_ROWS][GH_COLS];
 
 static lv_color_t dot_color(int16_t v) {
     if (v <= 0) return lv_color_hex(0x242424);
@@ -25,6 +26,9 @@ static lv_color_t dot_color(int16_t v) {
 static void on_delete(lv_event_t *) {
     s_lbl_contrib = nullptr;
     memset(s_dots, 0, sizeof(s_dots));
+    for (int r = 0; r < GH_ROWS; r++)
+        for (int c = 0; c < GH_COLS; c++)
+            lv_style_reset(&s_dot_styles[r][c]);
 }
 
 void create_github_screen() {
@@ -50,14 +54,20 @@ void create_github_screen() {
 
     for (int r = 0; r < GH_ROWS; r++) {
         for (int c = 0; c < GH_COLS; c++) {
+            // Explicit lv_style_t per dot — lv_obj_set_style_* local styles
+            // don't reliably trigger redraws on dynamic update in LVGL 8.
+            lv_style_init(&s_dot_styles[r][c]);
+            lv_style_set_radius(&s_dot_styles[r][c], DOT_SIZE / 2);
+            lv_style_set_bg_color(&s_dot_styles[r][c], lv_color_hex(0x242424));
+            lv_style_set_bg_opa(&s_dot_styles[r][c], LV_OPA_COVER);
+            lv_style_set_border_width(&s_dot_styles[r][c], 0);
+            lv_style_set_pad_all(&s_dot_styles[r][c], 0);
+
             lv_obj_t *dot = lv_obj_create(scr_github);
+            lv_obj_remove_style_all(dot);
             lv_obj_set_size(dot, DOT_SIZE, DOT_SIZE);
             lv_obj_set_pos(dot, X0 + c * DOT_HSTEP, Y_DOTS + r * DOT_VSTEP);
-            lv_obj_set_style_radius(dot, DOT_SIZE / 2, LV_PART_MAIN);
-            lv_obj_set_style_bg_color(dot, lv_color_hex(0x242424), LV_PART_MAIN);
-            lv_obj_set_style_bg_opa(dot, LV_OPA_COVER, LV_PART_MAIN);
-            lv_obj_set_style_border_width(dot, 0, LV_PART_MAIN);
-            lv_obj_set_style_pad_all(dot, 0, LV_PART_MAIN);
+            lv_obj_add_style(dot, &s_dot_styles[r][c], LV_PART_MAIN);
             lv_obj_clear_flag(dot, LV_OBJ_FLAG_SCROLLABLE);
             s_dots[r][c] = dot;
         }
@@ -77,9 +87,10 @@ void update_github_screen() {
 
     for (int r = 0; r < GH_ROWS; r++) {
         for (int c = 0; c < GH_COLS; c++) {
-            if (s_dots[r][c])
-                lv_obj_set_style_bg_color(s_dots[r][c],
-                    dot_color(g_github.contributions[r * GH_COLS + c]), LV_PART_MAIN);
+            if (!s_dots[r][c]) continue;
+            lv_style_set_bg_color(&s_dot_styles[r][c],
+                dot_color(g_github.contributions[r * GH_COLS + c]));
+            lv_obj_report_style_change(&s_dot_styles[r][c]);
         }
     }
 }
