@@ -1,6 +1,7 @@
 #include "ui_music.h"
 #include "ui_common.h"
 #include "hw.h"
+#include "module_registry.h"
 
 LV_FONT_DECLARE(sf_pro_display_medium_24);
 LV_FONT_DECLARE(sf_pro_display_medium_32);
@@ -27,6 +28,11 @@ static lv_obj_t *lbl_music_playpause = nullptr;
 static lv_obj_t *btn_playpause_bg    = nullptr;
 static lv_obj_t *img_art             = nullptr;
 static lv_img_dsc_t art_dsc          = {};
+
+static void on_delete(lv_event_t *) {
+    lbl_music_title = lbl_music_artist = lbl_music_playpause = nullptr;
+    btn_playpause_bg = img_art = nullptr;
+}
 
 static void set_cmd(const char *cmd) {
     strlcpy((char *)music_pending_cmd, cmd, sizeof(music_pending_cmd));
@@ -72,6 +78,7 @@ static lv_obj_t *make_btn(lv_obj_t *row, const char *sym, lv_color_t bg,
 void create_music_screen() {
     if (scr_music) return;
     scr_music = make_screen();
+    lv_obj_add_event_cb(scr_music, on_delete, LV_EVENT_DELETE,  NULL);
     lv_obj_add_event_cb(scr_music, on_gesture, LV_EVENT_GESTURE, NULL);
 
     // ── Album art ─────────────────────────────────────────────────────────────
@@ -138,6 +145,40 @@ void create_music_screen() {
     // Restore art if already loaded (screen was destroyed and recreated)
     if (g_art_buf) update_music_art();
 }
+
+static void mod_create() {
+    create_music_screen();
+    update_music_screen();
+}
+
+static void mod_destroy() {
+    scr_music = nullptr;
+}
+
+static void mod_update() {
+    MusicData md;
+    if (xQueueReceive(g_music_queue, &md, 0) == pdTRUE) {
+        g_music = md;
+        update_music_screen();
+        if (g_art_ready) { g_art_ready = false; update_music_art(); }
+    } else if (g_art_ready) {
+        g_art_ready = false;
+        update_music_art();
+    }
+}
+
+static Module music_module = {
+    .name       = "Music",
+    .icon       = LV_SYMBOL_AUDIO,
+    .icon_font  = &lv_font_montserrat_32,
+    .screen     = &scr_music,
+    .create     = mod_create,
+    .destroy    = mod_destroy,
+    .update     = mod_update,
+    .update_ms  = 0,
+    .order      = 3,
+};
+REGISTER_MODULE(music_module)
 
 void update_music_screen() {
     if (!scr_music || !g_music.valid) return;

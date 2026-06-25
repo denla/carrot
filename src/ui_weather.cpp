@@ -1,6 +1,7 @@
 #include "ui_weather.h"
 #include "ui_common.h"
 #include "hw.h"
+#include "module_registry.h"
 #include <string.h>
 
 LV_FONT_DECLARE(london_120);
@@ -11,6 +12,10 @@ LV_FONT_DECLARE(sf_symbols_icons_32);
 
 static lv_obj_t *lbl_w_icon  = nullptr;
 static lv_obj_t *lbl_w_hilow = nullptr;
+
+static void on_delete(lv_event_t *) {
+    lbl_w_icon = lbl_w_hilow = nullptr;
+}
 
 // ── Подбор иконки по русскому описанию OWM ────────────────────────────────
 // Порядок важен: специфичные условия проверяются первыми.
@@ -74,6 +79,7 @@ static void on_weather_gesture(lv_event_t *) {
 void create_weather_screen() {
     if (scr_weather) return;
     scr_weather = make_screen();
+    lv_obj_add_event_cb(scr_weather, on_delete,         LV_EVENT_DELETE,  NULL);
     lv_obj_add_event_cb(scr_weather, on_weather_gesture, LV_EVENT_GESTURE, NULL);
 
     // ── Текущая погода (y=93, h=164) ─────────────────────────────────────
@@ -139,6 +145,38 @@ void create_weather_screen() {
 }
 
 // ── Обновление данных ──────────────────────────────────────────────────────
+
+static void mod_create() {
+    create_weather_screen();
+    update_weather_screen();
+}
+
+static void mod_destroy() {
+    lbl_w_city = lbl_w_temp = lbl_w_time = nullptr;
+    for (int i = 0; i < 5; i++) lbl_w_fday[i] = lbl_w_fcond[i] = lbl_w_ftemp[i] = nullptr;
+    scr_weather = nullptr;
+}
+
+static void mod_update() {
+    WeatherData wd;
+    if (xQueueReceive(g_weather_queue, &wd, 0) == pdTRUE) {
+        g_weather = wd;
+        update_weather_screen();
+    }
+}
+
+static Module weather_module = {
+    .name       = "Weather",
+    .icon       = "\xEE\x80\x82",
+    .icon_font  = nullptr,
+    .screen     = &scr_weather,
+    .create     = mod_create,
+    .destroy    = mod_destroy,
+    .update     = mod_update,
+    .update_ms  = 0,
+    .order      = 1,
+};
+REGISTER_MODULE(weather_module)
 
 void update_weather_screen() {
     if (!scr_weather) return;

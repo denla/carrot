@@ -8,13 +8,10 @@
 #include "ui_clock3.h"
 #include "ui_clock4.h"
 #include "ui_clock5.h"
-#include "ui_weather.h"
-#include "ui_music.h"
-#include "ui_github.h"
+#include "module_registry.h"
 #include "weather.h"
 #include "web_api.h"
 #include "lamp.h"
-#include "ui_lamp.h"
 #include <WiFi.h>
 
 static void create_active_clock() {
@@ -121,32 +118,15 @@ void loop() {
         update_clock4();
     }
 
-    WeatherData wd;
-    if (xQueueReceive(g_weather_queue, &wd, 0) == pdTRUE) {
-        g_weather = wd;
-        update_weather_screen();
-    }
-
-    MusicData md;
-    if (xQueueReceive(g_music_queue, &md, 0) == pdTRUE) {
-        g_music = md;
-        update_music_screen();
-        if (g_art_ready) {
-            g_art_ready = false;
-            update_music_art();
+    uint32_t now = millis();
+    for (int i = 0; i < ModuleRegistry::count(); i++) {
+        Module *m = ModuleRegistry::get(i);
+        if (!m->update) continue;
+        if (m->update_ms == 0 || now - m->_last_ms >= m->update_ms) {
+            m->update();
+            if (m->update_ms > 0) m->_last_ms = now;
         }
-    } else if (g_art_ready) {
-        g_art_ready = false;
-        update_music_art();
     }
-
-    GitHubData gd;
-    if (xQueueReceive(g_github_queue, &gd, 0) == pdTRUE) {
-        g_github = gd;
-        update_github_screen();
-    }
-
-    if (lamp_take_update()) update_lamp_screen();
 
     if (pending_brightness >= 0) {
         set_brightness((uint8_t)pending_brightness);

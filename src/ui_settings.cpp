@@ -1,11 +1,31 @@
 #include "ui_settings.h"
 #include "ui_common.h"
 #include "hw.h"
+#include "module_registry.h"
 
 LV_FONT_DECLARE(sf_pro_display_medium_24);
 LV_FONT_DECLARE(sf_pro_display_medium_32);
 
 static lv_timer_t *mem_timer = nullptr;
+
+static void mod_destroy() {
+    lbl_bright_val = nullptr;
+    lbl_mem_heap = lbl_mem_lvgl = lbl_mem_psram = nullptr;
+    scr_settings = nullptr;
+}
+
+static Module settings_module = {
+    .name       = "Settings",
+    .icon       = "\xEE\x80\x84",
+    .icon_font  = nullptr,
+    .screen     = &scr_settings,
+    .create     = create_settings_screen,
+    .destroy    = mod_destroy,
+    .update     = nullptr,
+    .update_ms  = 0,
+    .order      = 6,
+};
+REGISTER_MODULE(settings_module)
 
 static void refresh_mem_labels() {
     if (!lbl_mem_heap) return;

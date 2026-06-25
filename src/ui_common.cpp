@@ -6,6 +6,7 @@
 #include "ui_music.h"
 #include "ui_github.h"
 #include "ui_lamp.h"
+#include "module_registry.h"
 
 LV_FONT_DECLARE(sf_pro_display_medium_24);
 LV_FONT_DECLARE(sf_symbols_icons_28);
@@ -46,17 +47,6 @@ lv_obj_t *make_row(lv_obj_t *parent, int y, int w, int h) {
     return row;
 }
 
-// Null all global widget pointers for a lazy screen before it is destroyed.
-static void null_lazy_widgets(lv_obj_t *scr) {
-    if (scr == scr_weather) {
-        lbl_w_city = lbl_w_temp = lbl_w_time = nullptr;
-        for (int i = 0; i < 5; i++) lbl_w_fday[i] = lbl_w_fcond[i] = lbl_w_ftemp[i] = nullptr;
-    } else if (scr == scr_settings) {
-        lbl_bright_val = nullptr;
-        lbl_mem_heap = lbl_mem_lvgl = lbl_mem_psram = nullptr;
-    }
-}
-
 void nav_to(lv_obj_t *from, lv_obj_t *to, lv_scr_load_anim_t dir) {
     if (top_bar) {
         bool show = (to != scr_clock && to != scr_clock2 && to != scr_clock3 && to != scr_clock4 && to != scr_clock5);
@@ -70,16 +60,16 @@ void nav_to(lv_obj_t *from, lv_obj_t *to, lv_scr_load_anim_t dir) {
     lv_obj_t *old_scr = from;
 
     if (!from_clock) {
-        // Null global widget pointers so update_xxx() functions skip safely
-        null_lazy_widgets(from);
-        // Null the screen pointer — new navigations will recreate on demand
-        if      (from == scr_nav)      scr_nav      = nullptr;
-        else if (from == scr_weather)  scr_weather  = nullptr;
-        else if (from == scr_settings) scr_settings = nullptr;
-        else if (from == scr_calendar) scr_calendar = nullptr;
-        else if (from == scr_music)    scr_music    = nullptr;
-        else if (from == scr_github)   scr_github   = nullptr;
-        else if (from == scr_lamp)     scr_lamp     = nullptr;
+        bool found = false;
+        for (int i = 0; i < ModuleRegistry::count(); i++) {
+            Module *m = ModuleRegistry::get(i);
+            if (*m->screen == from) {
+                if (m->destroy) m->destroy();  // nulls global widget ptrs + *m->screen
+                found = true;
+                break;
+            }
+        }
+        if (!found && from == scr_nav) scr_nav = nullptr;
     }
 
     if (from_clock || to_clock || !anim_enabled) {

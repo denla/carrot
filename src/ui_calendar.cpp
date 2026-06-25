@@ -1,6 +1,7 @@
 #include "ui_calendar.h"
 #include "ui_common.h"
 #include "hw.h"
+#include "module_registry.h"
 
 LV_FONT_DECLARE(sf_pro_display_medium_24);
 LV_FONT_DECLARE(sf_pro_display_medium_32);
@@ -27,6 +28,27 @@ static lv_obj_t *cal_highlights[42] = {};
 static lv_obj_t *cal_labels[42]     = {};
 static int        cal_year          = 0;
 static int        cal_month         = 0;
+
+static void on_delete(lv_event_t *) {
+    cal_month_lbl = nullptr;
+    memset(cal_highlights, 0, sizeof(cal_highlights));
+    memset(cal_labels,     0, sizeof(cal_labels));
+}
+
+static void mod_destroy() { scr_calendar = nullptr; }
+
+static Module calendar_module = {
+    .name       = "Calendar",
+    .icon       = "\xEE\x80\x83",
+    .icon_font  = nullptr,
+    .screen     = &scr_calendar,
+    .create     = create_calendar_screen,
+    .destroy    = mod_destroy,
+    .update     = nullptr,
+    .update_ms  = 0,
+    .order      = 2,
+};
+REGISTER_MODULE(calendar_module)
 
 static int day_of_week(int y, int m, int d) {
     static const int t[] = {0,3,2,5,0,3,5,1,4,6,2,4};
@@ -147,6 +169,7 @@ void create_calendar_screen() {
     cal_month = now.month;
 
     scr_calendar = make_screen();
+    lv_obj_add_event_cb(scr_calendar, on_delete,       LV_EVENT_DELETE,  NULL);
     lv_obj_add_event_cb(scr_calendar, on_cal_gesture,  LV_EVENT_GESTURE, NULL);
     lv_obj_add_event_cb(scr_calendar, [](lv_event_t *){ redraw_calendar(); },
                         LV_EVENT_SCREEN_LOADED, NULL);

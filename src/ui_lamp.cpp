@@ -1,6 +1,7 @@
 #include "ui_lamp.h"
 #include "ui_common.h"
 #include "lamp.h"
+#include "module_registry.h"
 
 LV_FONT_DECLARE(sf_pro_display_medium_24);
 LV_FONT_DECLARE(sf_pro_display_medium_32);
@@ -110,6 +111,27 @@ static void on_temp_plus(lv_event_t *) {
     g_lamp.color_temp = v;
     update_lamp_screen();
 }
+
+// ── Module registration ───────────────────────────────────────────────────────
+
+static void mod_destroy() { scr_lamp = nullptr; }
+
+static void mod_update() {
+    if (lamp_take_update()) update_lamp_screen();
+}
+
+static Module lamp_module = {
+    .name       = "Lamp",
+    .icon       = LV_SYMBOL_POWER,
+    .icon_font  = &lv_font_montserrat_32,
+    .screen     = &scr_lamp,
+    .create     = create_lamp_screen,
+    .destroy    = mod_destroy,
+    .update     = mod_update,
+    .update_ms  = 0,
+    .order      = 5,
+};
+REGISTER_MODULE(lamp_module)
 
 // ── Create / update ───────────────────────────────────────────────────────────
 

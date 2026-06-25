@@ -1,35 +1,35 @@
 #include "ui_nav.h"
-#include "ui_calendar.h"
-#include "ui_music.h"
 #include "ui_common.h"
 #include "hw.h"
-#include "ui_github.h"
+#include "module_registry.h"
 
 LV_FONT_DECLARE(sf_pro_display_medium_32);
 LV_FONT_DECLARE(sf_symbols_icons_32);
 
-#define ICON_CLOCK    "\xEE\x80\x81"
-#define ICON_WEATHER  "\xEE\x80\x82"
-#define ICON_NOTES    "\xEE\x80\x83"
-#define ICON_SETTINGS "\xEE\x80\x84"
+#define ICON_CLOCK "\xEE\x80\x81"
 
 #define CIRCLE_SIZE   90
 #define CIRCLE_GAP    16
 #define ROW_H         112
 #define ROW_PAD_V     11
 
-static void on_clock_item   (lv_event_t *) { nav_to(scr_nav, active_clock(), LV_SCR_LOAD_ANIM_MOVE_BOTTOM); }
-static void on_weather_item (lv_event_t *) { nav_to_weather (scr_nav); }
-static void on_settings_item(lv_event_t *) { nav_to_settings(scr_nav); }
-static void on_calendar_item(lv_event_t *) { nav_to_calendar(scr_nav); }
-static void on_music_item   (lv_event_t *) { nav_to_music   (scr_nav); }
-static void on_github_item  (lv_event_t *) { nav_to_github  (scr_nav); }
-static void on_lamp_item    (lv_event_t *) { nav_to_lamp    (scr_nav); }
+static void on_clock_item(lv_event_t *) {
+    nav_to(scr_nav, active_clock(), LV_SCR_LOAD_ANIM_MOVE_BOTTOM);
+}
+
+static void on_module_item(lv_event_t *e) {
+    Module *m = (Module *)lv_event_get_user_data(e);
+    if (!m) return;
+    if (!*m->screen) m->create();
+    if (*m->screen) nav_to(scr_nav, *m->screen, LV_SCR_LOAD_ANIM_MOVE_LEFT);
+}
 
 // ── Menu row: [dark circle with icon] [label] ─────────────────────────────────
 
 static void make_item(lv_obj_t *list, const char *icon_str, const char *label,
-                      lv_event_cb_t cb, const lv_font_t *icon_font = &sf_symbols_icons_32) {
+                      lv_event_cb_t cb,
+                      const lv_font_t *icon_font = &sf_symbols_icons_32,
+                      void *user_data = nullptr) {
     lv_obj_t *row = lv_obj_create(list);
     lv_obj_set_size(row, LV_PCT(100), ROW_H);
     lv_obj_set_style_bg_opa(row, LV_OPA_TRANSP, LV_PART_MAIN);
@@ -43,7 +43,7 @@ static void make_item(lv_obj_t *list, const char *icon_str, const char *label,
     lv_obj_set_style_pad_right(row, 0, LV_PART_MAIN);
     lv_obj_clear_flag(row, LV_OBJ_FLAG_SCROLLABLE);
     lv_obj_add_flag(row, LV_OBJ_FLAG_CLICKABLE);
-    if (cb) lv_obj_add_event_cb(row, cb, LV_EVENT_CLICKED, NULL);
+    if (cb) lv_obj_add_event_cb(row, cb, LV_EVENT_CLICKED, user_data);
 
     // Icon circle
     lv_obj_t *circle = lv_obj_create(row);
@@ -122,11 +122,10 @@ void create_nav_screen() {
     lv_obj_set_flex_flow(list, LV_FLEX_FLOW_COLUMN);
     lv_obj_set_style_pad_row(list, 0, LV_PART_MAIN);
 
-    make_item(list, ICON_CLOCK,       "Clock",    on_clock_item);
-    make_item(list, ICON_WEATHER,     "Weather",  on_weather_item);
-    make_item(list, ICON_NOTES,       "Calendar", on_calendar_item);
-    make_item(list, LV_SYMBOL_AUDIO,  "Music",    on_music_item,    &lv_font_montserrat_32);
-    make_item(list, LV_SYMBOL_EDIT,   "GitHub",   on_github_item,   &lv_font_montserrat_32);
-    make_item(list, LV_SYMBOL_POWER,  "Lamp",     on_lamp_item,     &lv_font_montserrat_32);
-    make_item(list, ICON_SETTINGS,    "Settings", on_settings_item);
+    make_item(list, ICON_CLOCK, "Clock", on_clock_item);
+    for (int i = 0; i < ModuleRegistry::count(); i++) {
+        Module *m = ModuleRegistry::get(i);
+        const lv_font_t *font = m->icon_font ? m->icon_font : &sf_symbols_icons_32;
+        make_item(list, m->icon, m->name, on_module_item, font, m);
+    }
 }

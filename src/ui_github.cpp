@@ -1,5 +1,6 @@
 #include "ui_github.h"
 #include "ui_common.h"
+#include "module_registry.h"
 
 LV_FONT_DECLARE(sf_pro_display_medium_24);
 
@@ -30,6 +31,29 @@ static void on_delete(lv_event_t *) {
         for (int c = 0; c < GH_COLS; c++)
             lv_style_reset(&s_dot_styles[r][c]);
 }
+
+static void mod_destroy() { scr_github = nullptr; }
+
+static void mod_update() {
+    GitHubData gd;
+    if (xQueueReceive(g_github_queue, &gd, 0) == pdTRUE) {
+        g_github = gd;
+        update_github_screen();
+    }
+}
+
+static Module github_module = {
+    .name       = "GitHub",
+    .icon       = LV_SYMBOL_EDIT,
+    .icon_font  = &lv_font_montserrat_32,
+    .screen     = &scr_github,
+    .create     = create_github_screen,
+    .destroy    = mod_destroy,
+    .update     = mod_update,
+    .update_ms  = 0,
+    .order      = 4,
+};
+REGISTER_MODULE(github_module)
 
 void create_github_screen() {
     if (scr_github) return;
